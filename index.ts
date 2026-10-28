@@ -1,6 +1,7 @@
-import express, {Request, Response} from "express";
+import express, {Request, Response, NextFunction} from "express";
 import path from "path";
-import {pool} from "./db";  // db.tsで作成したNeonへの接続を利用する
+import {pool} from "./db"; // db.tsで作成したNeonへの接続を利用する
+import {todoRouter} from "./src/apps/todo/todoRouter";
 
 const app = express(); // Expressアプリケーションを作成
 const port: number = 3000; // ローカルで使用するポート番号
@@ -9,6 +10,28 @@ type Product = {id: number; name: string; price: number};
 // ------------------------------
 // Expressの基本設定
 // ------------------------------
+// JSONボディパーサーの追加（APIのリクエストボディを受け取るため）
+app.use(express.json());
+
+// 不正なJSONを受け取った場合のエラーハンドラー（標準HTMLエラーの防止）
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (
+    err instanceof SyntaxError &&
+    "status" in err &&
+    err.status === 400 &&
+    "body" in err
+  ) {
+    res.status(400).json({
+      status: "error",
+      code: "BAD_REQUEST",
+      message: "不正なJSONフォーマットです",
+      details: [],
+    });
+    return;
+  }
+  next(err);
+});
+
 app.use(express.urlencoded({extended: true})); // フォームから送信されたデータを受け取れるようにする
 app.use(express.static(path.join(process.cwd(), "public"))); // CSSや画像などの静的ファイルを公開する
 app.set("view engine", "ejs"); // テンプレートエンジンにEJSを設定
@@ -19,12 +42,11 @@ app.set("views", path.join(process.cwd(), "views")); // EJSファイルを保存
 // ------------------------------
 
 // 「/」にアクセスされたときの処理
-// 「/」にアクセスされたときの処理
-app.get('/', (req: Request, res: Response): void => {
-  res.render('index');
+app.get("/", (req: Request, res: Response): void => {
+  res.render("index");
 });
 
-// Neonへの接続をSELEC文で確認する
+// Neonへの接続をSELECT文で確認する
 app.get("/api/db-check", async (_req, res) => {
   try {
     const result = await pool.query("SELECT 1 AS connection_test");
@@ -38,7 +60,6 @@ app.get("/api/db-check", async (_req, res) => {
   }
 });
 
-
 app.get("/db-sample", async (_req, res) => {
   try {
     const result = await pool.query<Product>(
@@ -51,8 +72,10 @@ app.get("/db-sample", async (_req, res) => {
   }
 });
 
-
-
+// ------------------------------
+// TODO API のルーティング登録
+// ------------------------------
+app.use("/api/v1/todos", todoRouter);
 
 // ------------------------------
 // サーバー起動
