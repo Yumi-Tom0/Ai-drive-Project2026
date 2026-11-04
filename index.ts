@@ -73,8 +73,14 @@ app.get("/db-sample", async (_req, res) => {
 });
 
 // ------------------------------
-// TODO API のルーティング登録
+// TODO 画面および API のルーティング登録
 // ------------------------------
+// GET /todo でTODO画面（views/todo/index.ejs）を表示
+app.get("/todo", (_req: Request, res: Response): void => {
+  res.render("todo/index");
+});
+
+// /api/v1/todos で API を登録
 app.use("/api/v1/todos", todoRouter);
 
 // ------------------------------
