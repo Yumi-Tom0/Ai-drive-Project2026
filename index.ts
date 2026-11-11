@@ -1,7 +1,8 @@
 import express, {Request, Response, NextFunction} from "express";
 import path from "path";
 import {pool} from "./db"; // db.tsで作成したNeonへの接続を利用する
-import {todoRouter} from "./src/apps/todo/todoRouter";
+import { todoRouter } from "./src/apps/todo/todoRouter";
+import {todoRouterV2} from "./src/apps/todo/v2/todoRouterV2";
 
 const app = express(); // Expressアプリケーションを作成
 const port: number = 3000; // ローカルで使用するポート番号
@@ -75,13 +76,21 @@ app.get("/db-sample", async (_req, res) => {
 // ------------------------------
 // TODO 画面および API のルーティング登録
 // ------------------------------
-// GET /todo でTODO画面（views/todo/index.ejs）を表示
+// V1 TODO画面
 app.get("/todo", (_req: Request, res: Response): void => {
   res.render("todo/index");
 });
 
-// /api/v1/todos で API を登録
-app.use("/api/v1/todos", todoRouter);
+// V2 TODO画面
+app.get("/todo-v2", (_req: Request, res: Response): void => {
+  res.render("todo/index_v2");
+});
+
+// V1 API
+app.use('/api/v1/todos', todoRouter);
+
+// V2 API
+app.use('/api/v2/todos', todoRouterV2);
 
 // ------------------------------
 // サーバー起動
